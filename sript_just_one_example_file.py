@@ -9,11 +9,11 @@ from skimage.morphology import binary_dilation, ball, remove_small_objects
 
 
 # Define input and output paths
-image_path = Path("/Users/frederic/Nextcloud/MD_MSC_Project/Jana_Mitograph/Input_pictures/CCCP/CCCP_16.tif")
-output_folder = Path("/Users/frederic/Nextcloud/MD_MSC_Project/Jana_Mitograph/Output_summary/CCCP")
+# image_path = Path("/Users/frederic/Nextcloud/MD_MSC_Project/Jana_Mitograph/Input_pictures/CCCP/CCCP_16.tif")
+# output_folder = Path("/Users/frederic/Nextcloud/MD_MSC_Project/Jana_Mitograph/Output_summary/CCCP")
 
-# image_path = Path('/Users/frederic/Desktop/untitled folder/Input/021.tif')
-# output_folder = Path('/Users/frederic/Desktop/untitled folder/Output')
+image_path = Path('/Users/frederic/Desktop/untitled folder/Input/111.tiff')
+output_folder = Path('/Users/frederic/Desktop/untitled folder/Output')
 output_folder.mkdir(parents=True, exist_ok=True)
 
 # Step 1: Load and preprocess
