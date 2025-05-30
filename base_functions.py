@@ -4,7 +4,6 @@ from skan import csr
 import imageio.v3 as iio
 import numpy as np
 import napari
-import matplotlib.pyplot as plt
 from skimage import filters, exposure
 from scipy.ndimage import gaussian_filter, median_filter
 from skimage.filters import unsharp_mask
@@ -78,25 +77,19 @@ def analyze_skeleton(skeleton, verbose=True):
             "total_nodes": 0,
             "total_edges": 0,
             "connected_components": 0,
-            "largest_component_pct": 0.0
+            "largest_component_pct": 0.0,
+            "dead_end_fraction": 0.0,
+            "three_way_fraction": 0.0
         }
 
     skeleton_graph = csr.Skeleton(skeleton)
-    stats_table = csr.summarize(skeleton_graph, separator='-')
-
-    total_edges = len(stats_table)
-    unique_nodes = set()
-    for path in skeleton_graph.paths_list():
-        if len(path) >= 3:
-            unique_nodes.add(path[1])
-            unique_nodes.add(path[2])
-        else:
-            if verbose:
-                print(f"[WARNING] Skipping malformed skeleton path: {path}")
-    total_nodes = len(unique_nodes)
-
-    labeled_skeleton = label(skeleton)
-    connected_components = len(np.unique(labeled_skeleton)) - (1 if 0 in labeled_skeleton else 0)
+    degrees = skeleton_graph.degrees
+    total_nodes = len(degrees)
+    total_edges = skeleton_graph.paths.shape[0]
+    connected_components = skeleton_graph.n_paths
+    dead_end_fraction = np.sum(degrees == 1) / total_nodes if total_nodes > 0 else 0.0
+    three_way_fraction = np.sum(degrees >= 3) / total_nodes if total_nodes > 0 else 0.0
+    degree_two_fraction = np.sum(degrees == 2) / total_nodes if total_nodes > 0 else 0.0
 
     # Compute area of largest connected component relative to total
     labeled = label(skeleton)
@@ -109,12 +102,18 @@ def analyze_skeleton(skeleton, verbose=True):
     if verbose:
         print(f"[INFO] Skeleton analysis: Nodes={total_nodes}, Edges={total_edges}, Connected components={connected_components}")
         print(f"[INFO] Largest component percentage: {largest_component_pct:.2f}%")
+        print(f"[INFO] Dead end fraction: {dead_end_fraction:.4f}")
+        print(f"[INFO] Three-way junction fraction: {three_way_fraction:.4f}")
+        print(f"[INFO] Degree-two node fraction: {degree_two_fraction:.4f}")
 
     return {
         "total_nodes": total_nodes,
         "total_edges": total_edges,
         "connected_components": connected_components,
-        "largest_component_pct": largest_component_pct
+        "largest_component_pct": largest_component_pct,
+        "dead_end_fraction": dead_end_fraction,
+        "three_way_fraction": three_way_fraction,
+        "degree_two_fraction": degree_two_fraction
     }
 
 
@@ -181,7 +180,7 @@ def visualize_and_animate(raw_img, enhanced_img, skeleton, bounds, out_path="mit
 
 
 
-def process_image_folder(input_root, output_root, generate_visualisation=True):
+def process_image_folder(input_root, output_root, generate_visualisation=True, Verbose_for_all_functions=False):
     """
     Batch-process 3D mitochondrial images across subfolders.
     Each subfolder in input_root is treated as a condition.
@@ -200,34 +199,27 @@ def process_image_folder(input_root, output_root, generate_visualisation=True):
         output_condition_folder.mkdir(parents=True, exist_ok=True)
         print(f"[BATCH] Processing {image_path.name} in {condition_name}")
         try:
-            raw_img, enhanced_img = load_and_preprocess_image(image_path, verbose=False)
-            binary_mask = binarize_image(enhanced_img, verbose=False)
+            raw_img, enhanced_img = load_and_preprocess_image(image_path, verbose=Verbose_for_all_functions)
+            binary_mask = binarize_image(enhanced_img, verbose=Verbose_for_all_functions)
             skeleton = skeletonize_3d(binary_mask.astype(bool))
-            cropped = crop_to_skeleton(raw_img, enhanced_img, skeleton, verbose=False)
-            stats = analyze_skeleton(cropped['skeleton'], verbose=False)
+            cropped = crop_to_skeleton(raw_img, enhanced_img, skeleton, verbose=Verbose_for_all_functions)
+            stats = analyze_skeleton(cropped['skeleton'], verbose=Verbose_for_all_functions)
             out_name = image_path.stem
 
             # Save visualization + z-projection
             if generate_visualisation:
-
                 out_video = output_condition_folder / f"{out_name}.mp4"
-
                 z_proj = visualize_and_animate(
                     cropped['img'], cropped['contrast_enhanced'], cropped['skeleton'],
                     cropped['bounds'], out_path=str(out_video), open_viewer=False, verbose=False
                 )
 
-            stats = analyze_skeleton(cropped['skeleton'], verbose=False)
-
-            # Collect all stats for summary
+            # Create summary row dynamically from analyze_skeleton output
             summary_row = {
                 "condition": condition_name,
-                "image_name": image_path.name,
-                "nodes": stats.get("total_nodes", 0),
-                "edges": stats.get("total_edges", 0),
-                "components": stats.get("connected_components", 0),
-                "largest_component_pct": stats.get("largest_component_pct", 0.0)
+                "image_name": image_path.name
             }
+            summary_row.update(stats)
             stats_list.append(summary_row)
 
         except Exception as e:
