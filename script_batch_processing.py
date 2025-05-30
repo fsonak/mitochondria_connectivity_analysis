@@ -1,4 +1,16 @@
-from sre_parse import Verbose
+"""
+# Script: script_batch_processing.py
+
+This script batch-processes a folder of 3D mitochondrial images for connectivity analysis.
+
+Steps:
+- Loads all images from `input_dir`
+- Skeletonizes and analyzes each image using `process_image_folder`
+- Saves outputs including skeleton overlays, 3D movies, and summary CSVs to `output_dir`
+
+Adjust paths and flags below as needed.
+"""
+
 
 from base_functions import *
 

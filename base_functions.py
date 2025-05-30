@@ -1,6 +1,3 @@
-import networkx as nx
-from skimage.graph import route_through_array
-from skan import csr
 import imageio.v3 as iio
 import numpy as np
 import napari
@@ -15,6 +12,24 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from skimage.measure import label, regionprops
+from skan import csr
+
+"""
+# Module: base_functions.py
+
+This module contains core functionality for processing and analyzing 3D mitochondrial images.
+
+Main components:
+- load_and_preprocess_image: denoising, sharpening, and contrast enhancement of raw 3D images
+- binarize_image: thresholding to generate binary masks
+- crop_to_skeleton: bounding-box crop of the image and skeleton
+- analyze_skeleton: extraction of graph-based features using skan (e.g., node degree distribution, component size)
+- visualize_and_animate: interactive and automated 3D visualization using napari
+- process_image_folder: batch-processing pipeline that organizes input/output and aggregates metrics
+
+All functions support a `verbose` mode for diagnostic output.
+
+"""
 
 
 def load_and_preprocess_image(path, sigma=0.8, median_size=2, clip_limit=0.03, verbose=False):
@@ -68,8 +83,11 @@ def crop_to_skeleton(raw_img, enhanced_img, skeleton, verbose=False):
 
 
 def analyze_skeleton(skeleton, verbose=True):
-    from skan import csr
 
+    '''
+    The analyze_skeleton function extracts graph-based connectivity metrics from a 3D skeleton,
+    \including node degree distributions and component size statistics.
+    '''
     if np.count_nonzero(skeleton) == 0:
         if verbose:
             print("[INFO] Empty skeleton, skipping analysis.")

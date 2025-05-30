@@ -1,11 +1,24 @@
+"""
+# Script: sript_just_one_example_file.py
+
+This script demonstrates the full mitochondrial connectivity analysis pipeline
+on a single 3D image file. It includes preprocessing, skeletonization, graph-based
+analysis, and visualization.
+
+Steps:
+- Load and enhance a 3D mitochondrial fluorescence image
+- Binarize and skeletonize the structure in 3D
+- Crop the region of interest around the skeleton
+- Analyze the skeleton for graph-based connectivity metrics
+- Visualize the structure and create a 3D movie
+- Save results including summary statistics to CSV
+
+Edit the `image_path` and `output_folder` variables as needed.
+"""
+
 from base_functions import *
 from pathlib import Path
 import pandas as pd
-from skimage.morphology import binary_dilation, ball, remove_small_objects
-
-#code to run for just one image:
-
-
 
 
 # Define input and output paths
